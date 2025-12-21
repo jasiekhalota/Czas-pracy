@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Czasu produkcji linii</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* --- STYLIZACJA --- */
+        body {
+            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { 
+            text-align: center; 
+            color: #ffffff; 
+            margin-bottom: 50px;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .groups-grid-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 1600px;
+        }
+
+        .group-container {
+            background-color: #1B365D; 
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7); 
+            padding: 30px;
+            border-left: 12px solid #4a4a4a;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #333;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: flex-start; 
+            align-items: center;
+            gap: 20px; 
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .group-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        /* Styl pola daty - TYLKO DO ODCZYTU */
+        .date-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input.main-date-input {
+            padding: 10px 15px;
+            font-size: 1.1rem;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background-color: #2d2d2d;
+            color: #fff;
+            color-scheme: dark;
+            pointer-events: none; 
+            user-select: none;
+            outline: none;
+        }
+
+        .timers-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 20px;
+        }
+
+        .timer-box {
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 140px;
+        }
+
+        .timer-box.master { border-top: 6px solid #48bb78; }
+        .timer-box.sub1 { border-top: 6px solid #ed8936; }
+        .timer-box.sub2 { border-top: 6px solid #f56565; }
+
+        .t-label { 
+            font-size: 0.95rem; 
+            color: #a0aec0; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .t-footer { 
+            font-size: 1.1rem; 
+            color: #cbd5e0; 
+            font-weight: 800; 
+            margin-bottom: 8px; 
+        }
+        
+        .t-value { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            color: #fff; 
+            background: #1a1a1a; 
+            padding: 8px 0; 
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace; 
+            border: 1px solid #333;
+        }
+        
+        .overdue .t-footer { color: #fc8181 !important; }
+        .overdue .t-value { 
+            color: #feb2b2 !important; 
+            background: rgba(197, 48, 48, 0.3);
+            border-color: #9b2c2c;
+        }
+
+        @media (max-width: 1100px) {
+             .groups-grid-wrapper { grid-template-columns: 1fr; }
+             .group-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Monitor Czasu produkcji linii</h1>
+
+    <div class="groups-grid-wrapper"></div>
+
+    <script>
+        // --- KONFIGURACJA DANYCH ---
+        const DEFAULT_LIMITS = {
+            1: { master: {limit: 140, label: "Rozlew CK"}, sub1: {limit: 85, label: "Zb. Asep. A1"}, sub2: {limit: 41, label: "Past. A1"} },
+            2: { master: {limit: 140, label: "Rozlew CL"}, sub1: {limit: 72, label: "Zb. Asep. A2"}, sub2: {limit: 32, label: "Past. A2"} },
+            3: { master: {limit: 168, label: "Rozlew CM"}, sub1: {limit: 120, label: "Zb. Asep. A3"}, sub2: {limit: 38, label: "Past. A3"} },
+            4: { master: {limit: 168, label: "Rozlew CN"}, sub1: {limit: 120, label: "Zb. Asep. A4"}, sub2: {limit: 50, label: "Past. A4"} }
+        };
+
+        // --- KONFIGURACJA FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwd6X6fLimrNVsz9OBPhIKbXSdysEutAw",
+            authDomain: "dane-17dae.firebaseapp.com",
+            databaseURL: "https://dane-17dae-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "dane-17dae",
+            storageBucket: "dane-17dae.firebasestorage.app",
+            messagingSenderId: "41745033318",
+            appId: "1:41745033318:web:5ada3cafa89ccd3d7da5a7",
+            measurementId: "G-RCR43S0VJ5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const dataRef = db.ref('monitorData');
+
+        window.SHARED_DATA = {};
+
+        function pad(num) { return num < 10 ? '0' + num : num; }
+
+        function formatTargetDate(date) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            let dayLabel = date.toLocaleDateString('pl-PL', { weekday: 'long' });
+            if (targetDay.getTime() === today.getTime()) dayLabel = "Dziś";
+            return `${dayLabel} ${pad(date.getDate())}.${pad(date.getMonth() + 1)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function generateUI() {
+            const grid = document.querySelector('.groups-grid-wrapper');
+            let html = '';
+            for (let i = 1; i <= 4; i++) {
+                html += `
+                <div class="group-container">
+                    <div class="group-header">
+                        <h3 class="group-title">Aseptic A ${i}</h3>
+                        <div class="date-input-wrapper">
+                            <label style="font-weight:600; font-size: 1rem; color: #a0aec0;">Start:</label>
+                            <input type="datetime-local" class="main-date-input" id="main-${i}" readonly>
+                        </div>
+                    </div>
+                    <div class="timers-row">
+                        ${createBox(i, 'master')}
+                        ${createBox(i, 'sub1')}
+                        ${createBox(i, 'sub2')}
+                    </div>
+                </div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function createBox(groupId, type) {
+            const info = DEFAULT_LIMITS[groupId][type];
+            return `
+                <div class="timer-box ${type}" id="box-${groupId}-${type}">
+                    <span class="t-label">${info.label} (${info.limit}h)</span>
+                    <div class="t-footer" id="f-${groupId}-${type}">--:--</div>
+                    <div class="t-value" id="v-${groupId}-${type}">--d --h --m</div>
+                </div>`;
+        }
+
+        function updateTimers() {
+            const now = new Date();
+            for (let i = 1; i <= 4; i++) {
+                const startTimeStr = window.SHARED_DATA[`main-${i}`];
+                const inputEl = document.getElementById(`main-${i}`);
+                
+                if (!startTimeStr) {
+                    if(inputEl) inputEl.value = "";
+                    continue;
+                }
+
+                if(inputEl) inputEl.value = startTimeStr;
+                const mainStart = new Date(startTimeStr);
+
+                ['master', 'sub1', 'sub2'].forEach(type => {
+                    const overrideLimit = window.SHARED_DATA[`override-${i}-${type}`];
+                    const limit = overrideLimit ? parseInt(overrideLimit) : DEFAULT_LIMITS[i][type].limit;
+                    
+                    const subStartStr = window.SHARED_DATA[`sub-${i}-${type}`];
+                    const effectiveStart = (type !== 'master' && subStartStr) ? new Date(subStartStr) : mainStart;
+
+                    const target = new Date(effectiveStart.getTime() + (limit * 3600000));
+                    const diff = target - now;
+
+                    const vEl = document.getElementById(`v-${i}-${type}`);
+                    const fEl = document.getElementById(`f-${i}-${type}`);
+                    const box = document.getElementById(`box-${i}-${type}`);
+
+                    if(fEl) fEl.innerText = formatTargetDate(target);
+
+                    if (diff <= 0) {
+                        if(vEl) vEl.innerText = "KONIEC CZASU";
+                        if(box) box.classList.add('overdue');
+                    } else {
+                        const d = Math.floor(diff / 86400000);
+                        const h = Math.floor((diff % 86400000) / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        const s = Math.floor((diff % 60000) / 1000);
+                        if(vEl) vEl.innerText = `${d}D ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+                        if(box) box.classList.remove('overdue');
+                    }
+                });
+            }
+        }
+
+        dataRef.on('value', (snapshot) => {
+            window.SHARED_DATA = snapshot.val() || {};
+            updateTimers();
+        });
+
+        generateUI();
+        setInterval(updateTimers, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Czasu pracy Linii - Dark Mode</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* --- STYL: DARK MODE & RAISED CARDS --- */
+        body {
+            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            background-color: #121212; /* Bardzo ciemne tło */
+            color: #e0e0e0; /* Jasny tekst */
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { 
+            text-align: center; 
+            color: #ffffff; 
+            margin-bottom: 50px;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #save-data-btn {
+            padding: 12px 24px; 
+            font-size: 1.1rem; 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin-bottom: 30px; 
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #save-data-btn:hover {
+             background: #2ecc71;
+             transform: translateY(-2px);
+             box-shadow: 0 6px 20px rgba(39, 174, 96, 0.6);
+        }
+        
+        .groups-grid-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 1600px;
+        }
+
+        /* --- STYL KAFELKA GRUPY (EFEKT UNIESIENIA) --- */
+        .group-container {
+            background-color: #1B365D; /* Ciemny grafit */
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 4px 10px rgba(0,0,0,0.5); 
+            padding: 30px;
+            border-left: 12px solid #4a4a4a;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid #333;
+        }
+
+        .group-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .group-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input.main-date-input, input.sub-date-input, input.limit-override-input {
+            padding: 10px 15px;
+            font-size: 1.1rem;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background-color: #2d2d2d;
+            font-family: inherit;
+            color: #fff;
+            transition: border-color 0.3s;
+            color-scheme: dark;
+        }
+        
+        input.main-date-input:focus, input.sub-date-input:focus {
+            border-color: #667eea;
+            outline: none;
+            background-color: #363636;
+        }
+
+        .clear-btn {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #a0aec0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover { 
+            background: #3e2e2e; 
+            color: #e53e3e; 
+            border-color: #e53e3e; 
+        }
+
+        .reset-btn {
+            background: #333;
+            border: 1px solid #555;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover {
+            background: #555;
+            color: #fff;
+        }
+
+        .timers-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        .timer-box {
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 160px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .timer-box.master { border-top: 6px solid #48bb78; background: linear-gradient(to bottom, #1e2820, #252525); }
+        .timer-box.sub1 { border-top: 6px solid #ed8936; }
+        .timer-box.sub2 { border-top: 6px solid #f56565; }
+
+        .timer-box.limit-overridden {
+            border-top: 6px solid #e74c3c; 
+            background: linear-gradient(to bottom, #2c1e1e, #252525);
+        }
+
+        .timer-box.limit-overridden .t-value {
+            color: #fc8181; 
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .timer-box.limit-overridden .t-label {
+            color: #fc8181; 
+        }
+
+        .t-label-container {
+            display: flex;
+            align-items: flex-start; 
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .limit-buttons-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px; 
+            margin-top: -3px; 
+        }
+
+        .t-label { 
+            font-size: 0.95rem; 
+            color: #a0aec0; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            cursor: pointer;
+            margin-top: 2px; 
+        }
+
+        .edit-limit-btn, .save-limit-btn, .reset-limit-btn {
+            background: #333;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            font-size: 0.8rem;
+            color: #ccc;
+            padding: 0;
+            font-weight: bold;
+        }
+        .edit-limit-btn:hover, .save-limit-btn:hover, .reset-limit-btn:hover {
+            background: #555;
+            color: white;
+        }
+        
+        .sub-input-container { display: flex; gap: 5px; align-items: center; }
+        input.sub-date-input { 
+            flex: 1; padding: 6px; font-size: 0.85rem; border: 1px solid #444; 
+            border-radius: 5px; margin-bottom: 5px; box-sizing: border-box; 
+            background: #2d2d2d; 
+        }
+        .sub-input-label { font-size: 0.75rem; color: #718096; display: block; margin-bottom: 3px; text-align: left; }
+        
+        .t-footer { 
+            font-size: 1.1rem; 
+            color: #cbd5e0; 
+            font-weight: 800; 
+            margin-bottom: 5px; 
+            line-height: 1.3; 
+        }
+        
+        .t-value { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            color: #fff; 
+            background: #333; 
+            padding: 5px 0; 
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace; 
+            border: 1px solid #444;
+        }
+        
+        .overdue .t-footer { color: #fc8181 !important; }
+        .overdue .t-value { 
+            color: #feb2b2 !important; 
+            background: rgba(197, 48, 48, 0.2);
+            border-color: #9b2c2c;
+        }
+
+        @media (max-width: 1100px) {
+             .groups-grid-wrapper { grid-template-columns: 1fr; }
+             body { padding: 15px; }
+             .group-container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Monitor cyklów produkcyjnych</h1>
+
+    <button id="save-data-btn" onclick="saveDataToFirebase()">
+        ZAPISZ I SYNCHRONIZUJ DANE
+    </button>
+    <div class="groups-grid-wrapper">
+        </div>
+
+    <script>
+        // Definicja limitów domyślnych
+        const DEFAULT_LIMITS = {
+            1: { master: {limit: 140, label: "Rozlew CK"}, sub1: {limit: 85, label: "Zb. Asep. A1"}, sub2: {limit: 41, label: "Past. A1"} },
+            2: { master: {limit: 140, label: "Rozlew CL"}, sub1: {limit: 72, label: "Zb. Asep. A2"}, sub2: {limit: 32, label: "Past. A2"} },
+            3: { master: {limit: 168, label: "Rozlew CM"}, sub1: {limit: 120, label: "Zb. Asep. A3"}, sub2: {limit: 38, label: "Past. A3"} },
+            4: { master: {limit: 168, label: "Rozlew CN"}, sub1: {limit: 120, label: "Zb. Asep. A4"}, sub2: {limit: 50, label: "Past. A4"} }
+        };
+        
+        // Funkcja do generowania HTML dla pojedynczego kafelka
+        function generateTimerBox(groupId, type) {
+            const typeClass = type; 
+            const inputId = `sub-${groupId}-${type}`;
+            const labelId = `label-${groupId}-${type}`;
+            const containerId = `limit-container-${groupId}-${type}`;
+            const footerId = `f-${groupId}-${type}`;
+            const valueId = `t-${groupId}-${type}`;
+            
+            const isMaster = type === 'master';
+            const initialData = DEFAULT_LIMITS[groupId][type]; 
+            
+            // UWAGA: Używam backticków (`) do szablonu HTML
+            return `
+            <div class="timer-box ${typeClass}">
+                <div>
+                    <span class="t-label-container" id="${containerId}">
+                        <span class="t-label" id="${labelId}">${initialData.label} (${initialData.limit}h)</span> 
+                        <div class="limit-buttons-group">
+                            <button class="edit-limit-btn" onclick="toggleLimitInput(${groupId}, '${type}')" title="Zmień limit czasowy">
+                                ✎
+                            </button>
+                            <button class="reset-limit-btn" onclick="resetLimit(${groupId}, '${type}')" title="Przywróć domyślny limit (R)">
+                                R
+                            </button>
+                        </div>
+                    </span>
+                    ${isMaster ? `<div style="font-size: 0.85rem; color: #48bb78; padding: 0 8px 8px; font-weight: 600;">Synchronizacja automatyczna</div>` : `
+                        <div style="text-align:left; margin-top:10px;">
+                            <span class="sub-input-label">Korekta startu (opcja):</span>
+                            <div class="sub-input-container">
+                                <input type="datetime-local" class="sub-date-input" id="${inputId}" onchange="saveAndUpdate('${inputId}')">
+                                <button class="reset-btn" onclick="clearSub('${inputId}')">R</button>
+                            </div>
+                        </div>
+                    `}
+                </div>
+                <div style="margin-top: ${isMaster ? '0' : '15px'};">
+                    <div class="t-footer" id="${footerId}">--.-- --:--</div>
+                    <div class="t-value" id="${valueId}">--d --h --m --s</div>
+                </div>
+            </div>
+            `;
+        }
+
+        // Generowanie wszystkich grup do DOM
+        function generateAllGroups() {
+            try {
+                const gridWrapper = document.querySelector('.groups-grid-wrapper');
+                if (!gridWrapper) {
+                    console.error("Nie znaleziono kontenera .groups-grid-wrapper!");
+                    return;
+                }
+
+                let htmlContent = '';
+
+                for(let i = 1; i <= 4; i++) {
+                    htmlContent += `
+                        <div class="group-container" id="group-${i}">
+                            <div class="group-header">
+                                <h3 class="group-title">Aseptic A ${i}</h3>
+                                <div class="date-input-wrapper">
+                                    <label style="font-weight:600; font-size: 1.1rem; color: #ccc;">Start:</label>
+                                    <input type="datetime-local" class="main-date-input" onchange="saveAndUpdate('main-${i}')" id="main-${i}">
+                                    <button class="clear-btn" onclick="clearMain('${i}')" title="Wyczyść zlecenie">✕</button>
+                                </div>
+                            </div>
+                            <div class="timers-row">
+                                ${generateTimerBox(i, 'master')} 
+                                ${generateTimerBox(i, 'sub1')}
+                                ${generateTimerBox(i, 'sub2')}
+                            </div>
+                        </div>
+                    `;
+                }
+                gridWrapper.innerHTML = htmlContent;
+            } catch (e) {
+                console.error("Błąd generowania grup:", e);
+                alert("Błąd generowania interfejsu: " + e.message);
+            }
+        }
+
+        // Globalny obiekt do przechowywania danych 
+        window.SHARED_DATA = {}; 
+        
+        // --- KONFIGURACJA FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwd6X6fLimrNVsz9OBPhIKbXSdysEutAw",
+            authDomain: "dane-17dae.firebaseapp.com",
+            databaseURL: "https://dane-17dae-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "dane-17dae",
+            storageBucket: "dane-17dae.firebasestorage.app",
+            messagingSenderId: "41745033318",
+            appId: "1:41745033318:web:5ada3cafa89ccd3d7da5a7",
+            measurementId: "G-RCR43S0VJ5"
+        };
+        
+        // Inicjalizacja Firebase (zabezpieczona try-catch)
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch(e) {
+            console.error("Błąd Firebase init:", e);
+        }
+        
+        const db = firebase.database();
+        const dataRef = db.ref('monitorData');
+
+        // ==========================================================
+        // === POZOSTAŁE FUNKCJE
+        // ==========================================================
+        
+        function pad(num) { return num < 10 ? '0' + num : num; }
+
+        function getLimitOverrideId(groupId, type) {
+            return `override-${groupId}-${type}`;
+        }
+
+        function saveDataToFirebase() {
+            dataRef.set(window.SHARED_DATA)
+                .then(() => { alert("Dane zsynchronizowane z Firebase!"); })
+                .catch((error) => { alert("BŁĄD ZAPISU do Firebase."); });
+        }
+
+        function startFirebaseListener() {
+            dataRef.on('value', (snapshot) => {
+                const firebaseData = snapshot.val();
+                window.SHARED_DATA = firebaseData || {};
+                
+                for (let i = 1; i <= 4; i++) {
+                    ['main-' + i, `sub-${i}-sub1`, `sub-${i}-sub2`].forEach(id => {
+                        const value = window.SHARED_DATA[id];
+                        const inputElement = document.getElementById(id);
+                        if (inputElement) {
+                            inputElement.value = value || ""; 
+                        }
+                    });
+                }
+                updateAll(); 
+            }, (error) => {
+                console.error("Błąd odczytu z Firebase: ", error);
+            });
+        }
+        
+        function updateSharedData(key, value) {
+            window.SHARED_DATA[key] = value;
+        }
+
+        function getEffectiveLimit(groupId, type) {
+            const overrideKey = getLimitOverrideId(groupId, type);
+            const savedOverride = parseInt(window.SHARED_DATA?.[overrideKey]); 
+            const baseLimit = DEFAULT_LIMITS[groupId][type].limit; 
+
+            if (!isNaN(savedOverride) && savedOverride > 0) {
+                return savedOverride;
+            }
+            return baseLimit;
+        }
+
+        function saveNewLimit(groupId, type) {
+            const input = document.getElementById(`input-limit-${groupId}-${type}`);
+            const newValue = parseInt(input.value);
+            
+            const baseLimit = DEFAULT_LIMITS[groupId][type].limit;
+            const overrideKey = getLimitOverrideId(groupId, type);
+            
+            if (isNaN(newValue) || newValue <= 0 || newValue === baseLimit) {
+                updateSharedData(overrideKey, null);
+            } else {
+                updateSharedData(overrideKey, newValue);
+            }
+            updateAll();
+        }
+
+        function resetLimit(groupId, type) {
+            const overrideKey = getLimitOverrideId(groupId, type);
+            updateSharedData(overrideKey, null);
+            toggleLimitInput(groupId, type, true); 
+            updateAll();
+        }
+
+        function toggleLimitInput(groupId, type, isReset = false) {
+            const containerId = `limit-container-${groupId}-${type}`;
+            const container = document.getElementById(containerId);
+            
+            if (isReset || container.querySelector('input.limit-override-input')) {
+                updateLabelsAndOverrides(); 
+                return; 
+            }
+            
+            const currentLimit = getEffectiveLimit(groupId, type);
+            
+            const inputHtml = `
+                <input type="number" class="limit-override-input" id="input-limit-${groupId}-${type}" value="${currentLimit}" min="1" autofocus style="margin-top: 2px;">
+                <div class="limit-buttons-group">
+                    <button class="save-limit-btn" onclick="saveNewLimit(${groupId}, '${type}')" title="Zapisz limit">✓</button>
+                    <button class="reset-limit-btn" onclick="resetLimit(${groupId}, '${type}')" title="Przywróć domyślny limit (R)">R</button>
+                </div>
+            `;
+            
+            container.innerHTML = inputHtml;
+            const inputElement = document.getElementById(`input-limit-${groupId}-${type}`);
+            
+            if (inputElement) {
+                inputElement.focus();
+                inputElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') saveNewLimit(groupId, type);
+                });
+            }
+        }
+
+        function formatTargetDate(date) {
+            if (!date) return "--.--.-- --:--";
+            
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+            let dayLabel = date.toLocaleDateString('pl-PL', { weekday: 'long' });
+
+            if (targetDay.getTime() === today.getTime()) {
+                dayLabel = "Dziś";
+            } else if (targetDay.getTime() === tomorrow.getTime()) {
+                dayLabel = "Jutro";
+            }
+
+            const day = pad(date.getDate());
+            const month = pad(date.getMonth() + 1);
+            const year = String(date.getFullYear()).slice(-2);
+            const hours = pad(date.getHours());
+            const minutes = pad(date.getMinutes());
+            
+            return `${dayLabel} ${day}.${month}.${year} ${hours}:${minutes}`;
+        }
+
+        function saveAndUpdate(inputId) {
+            const val = document.getElementById(inputId).value;
+            updateSharedData(inputId, val);
+            updateAll();
+        }
+
+        function clearSub(inputId) {
+            document.getElementById(inputId).value = "";
+            updateSharedData(inputId, null);
+            updateAll();
+        }
+
+        function clearMain(groupId) {
+            const mainId = 'main-' + groupId;
+            document.getElementById(mainId).value = "";
+            updateSharedData(mainId, null);
+
+            const sub1 = `sub-${groupId}-sub1`;
+            const sub2 = `sub-${groupId}-sub2`;
+            
+            document.getElementById(sub1).value = "";
+            updateSharedData(sub1, null);
+            document.getElementById(sub2).value = "";
+            updateSharedData(sub2, null);
+
+            updateSharedData(getLimitOverrideId(groupId, 'master'), null);
+            updateSharedData(getLimitOverrideId(groupId, 'sub1'), null);
+            updateSharedData(getLimitOverrideId(groupId, 'sub2'), null);
+
+            updateAll();
+        }
+
+        function updateLabelsAndOverrides() {
+            for (let i = 1; i <= 4; i++) {
+                ['master', 'sub1', 'sub2'].forEach(type => {
+                    const containerId = `limit-container-${i}-${type}`;
+                    const container = document.getElementById(containerId);
+                    
+                    // Bezpiecznik: jeśli elementu nie ma w DOM, pomiń
+                    if (!container) return;
+
+                    const inputElement = container.querySelector('input.limit-override-input');
+                    const boxEl = container.closest('.timer-box');
+                    
+                    const effectiveLimit = getEffectiveLimit(i, type);
+                    const baseLimit = DEFAULT_LIMITS[i][type].limit;
+                    const baseLabel = DEFAULT_LIMITS[i][type].label; 
+                    
+                    if (!inputElement) {
+                        const labelId = `label-${i}-${type}`;
+                        const labelText = `${baseLabel} (${effectiveLimit}h)`; 
+                        
+                        container.innerHTML = `
+                            <span class="t-label" id="${labelId}">${labelText}</span>
+                            <div class="limit-buttons-group">
+                                <button class="edit-limit-btn" onclick="toggleLimitInput(${i}, '${type}')" title="Zmień limit czasowy">✎</button>
+                                <button class="reset-limit-btn" onclick="resetLimit(${i}, '${type}')" title="Przywróć domyślny limit (R)">R</button>
+                            </div>
+                        `;
+                    }
+                    
+                    if (effectiveLimit !== baseLimit) {
+                        boxEl.classList.add('limit-overridden');
+                    } else {
+                        boxEl.classList.remove('limit-overridden');
+                    }
+                });
+            }
+        }
+
+        function updateGroup(groupId) {
+            const mainInput = document.getElementById('main-' + groupId);
+            // Bezpiecznik: jeśli inputu nie ma, przerwij
+            if (!mainInput) return;
+
+            const mainDateValue = mainInput.value || window.SHARED_DATA['main-' + groupId];
+            
+            if (!mainDateValue) {
+                resetDisplay(groupId, 'master');
+                resetDisplay(groupId, 'sub1');
+                resetDisplay(groupId, 'sub2');
+                return;
+            }
+
+            const mainDate = new Date(mainDateValue); 
+
+            const masterLimit = getEffectiveLimit(groupId, 'master');
+            const sub1Limit = getEffectiveLimit(groupId, 'sub1');
+            const sub2Limit = getEffectiveLimit(groupId, 'sub2');
+            
+            const baseMaster = DEFAULT_LIMITS[groupId].master.limit;
+            const baseSub1 = DEFAULT_LIMITS[groupId].sub1.limit;
+            const baseSub2 = DEFAULT_LIMITS[groupId].sub2.limit;
+
+            calcAndShow(groupId, 'master', mainDate, masterLimit, baseMaster);
+
+            const input1 = document.getElementById(`sub-${groupId}-sub1`);
+            let start1 = (input1 && input1.value) ? new Date(input1.value) : mainDate;
+            calcAndShow(groupId, 'sub1', start1, sub1Limit, baseSub1);
+
+            const input2 = document.getElementById(`sub-${groupId}-sub2`);
+            let start2 = (input2 && input2.value) ? new Date(input2.value) : mainDate;
+            calcAndShow(groupId, 'sub2', start2, sub2Limit, baseSub2);
+        }
+
+        function resetDisplay(groupId, type) {
+            const tEl = document.getElementById(`t-${groupId}-${type}`);
+            const fEl = document.getElementById(`f-${groupId}-${type}`);
+            if (tEl) {
+                tEl.innerText = "--d --h --m --s";
+                tEl.closest('.timer-box').classList.remove('overdue');
+            }
+            if (fEl) fEl.innerText = "--.--.-- --:--";
+        }
+
+        function calcAndShow(groupId, type, startDate, limitHours, baseLimit) {
+            const now = new Date();
+            const targetDate = new Date(startDate.getTime() + (limitHours * 60 * 60 * 1000));
+            let diff = targetDate - now;
+
+            const displayEl = document.getElementById(`t-${groupId}-${type}`);
+            const footerEl = document.getElementById(`f-${groupId}-${type}`);
+            
+            if (!displayEl || !footerEl) return;
+
+            const boxEl = displayEl.closest('.timer-box');
+
+            footerEl.innerText = formatTargetDate(targetDate);
+            
+            if (diff <= 0) {
+                displayEl.innerText = "KONIEC CZASU";
+                boxEl.classList.add('overdue');
+            } else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                diff -= days * (1000 * 60 * 60 * 24);
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                diff -= hours * (1000 * 60 * 60);
+                
+                const minutes = Math.floor(diff / (1000 * 60));
+                diff -= minutes * (1000 * 60);
+                
+                const seconds = Math.floor(diff / 1000);
+
+                displayEl.innerText = `${days}D ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+                boxEl.classList.remove('overdue');
+            }
+        }
+
+        function updateAll() {
+            updateLabelsAndOverrides(); 
+            for (let i = 1; i <= 4; i++) {
+                updateGroup(i);
+            }
+        }
+
+        // --- INICJALIZACJA ---
+        // Wywołujemy od razu, bo skrypt jest na końcu body
+        generateAllGroups();
+        startFirebaseListener(); 
+        setInterval(updateAll, 1000); 
+
+    </script>
+</body>
+</html>
