@@ -4,6 +4,11 @@
       "source": "/licznik_view.html",
       "destination": "/",
       "permanent": false
+    },
+    {
+      "source": "/licznik.html",
+      "destination": "/",
+      "permanent": false
     }
   ],
   "rewrites": [
