@@ -1,4 +1,5 @@
 {
+  "cleanUrls": true,
   "redirects": [
     {
       "source": "/licznik_view.html",
@@ -9,12 +10,6 @@
       "source": "/licznik.html",
       "destination": "/",
       "permanent": false
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/((?!api/|static/|_next/|favicon.ico).*)",
-      "destination": "/index.html"
     }
   ]
 }
