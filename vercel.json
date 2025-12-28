@@ -1,16 +1,5 @@
 {
-  "redirects": [
-    {
-      "source": "/licznik_view(.*)",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/licznik(.*)",
-      "destination": "/",
-      "permanent": false
-    }
-  ],
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/((?!api/|static/|_next/|favicon.ico).*)",
