@@ -3,22 +3,22 @@
     {
       "source": "/licznik",
       "destination": "/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/licznik.html",
       "destination": "/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/licznik_view",
       "destination": "/",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/licznik_view.html",
       "destination": "/",
-      "permanent": true
+      "permanent": false
     }
   ],
   "rewrites": [
