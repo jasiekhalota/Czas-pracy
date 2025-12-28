@@ -1,14 +1,12 @@
 {
-  "redirects": [
+  "rewrites": [
     {
       "source": "/licznik_view.html",
-      "destination": "/",
-      "permanent": false
+      "destination": "/index.html"
     },
     {
       "source": "/((?!api/|static/|_next/|favicon.ico).*)",
-      "destination": "/",
-      "permanent": false
+      "destination": "/index.html"
     }
   ]
 }
