@@ -4,8 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor czasu pracy urządzeń lini produkcyjnych Aseptic PET</title>
+	
+<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon-96x96.png" />
+    
+    <meta name="apple-mobile-web-app-title" content="Licznik" />
+    <link rel="manifest" href="site.webmanifest" />
+
     <style>
-        /* --- STYLIZACJA SPÓJNA Z LICZNIKIEM --- */
         body {
             font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
             background-color: #121212;
@@ -14,78 +23,90 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            /* Rozkładamy elementy: góra - środek (pusty) - dół */
+            justify-content: space-between; 
             text-align: center;
+            padding: 100px 0; /* Odstęp od krawędzi ekranu */
+            box-sizing: border-box;
+
+            /* Logo na środku */
+            background-image: url('logo_tlo.png'); 
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 500px; 
         }
 
         h1 { 
             color: #ffffff; 
-            margin-bottom: 60px;
-            font-size: 2.8rem;
-            max-width: 800px;
-            letter-spacing: 1px;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            font-size: 2.5rem;
+            max-width: 900px;
+            line-height: 1.2;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            
+            /* Przywrócenie centrowania */
+            display: block;
+            width: 100%;
+            
+            /* Obwódka liter */
+            -webkit-text-stroke: 1px black;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
         .menu-container {
             display: flex;
-            gap: 40px;
+            gap: 30px;
+            /* Przyciski zawsze na dole dzięki space-between w body */
+            margin-top: auto; 
+            padding-top: 100px; /* Dodatkowy dystans od środka (logo) */
         }
 
         .menu-btn {
-            width: 250px;
-            padding: 30px;
-            font-size: 1.5rem;
+            width: 260px; 
+            height: 160px;
+            padding: 20px;
+            font-size: 1.4rem; 
             font-weight: 700;
             text-transform: uppercase;
             color: white;
-            background-color: #1B365D; /* Kolor błękitny z Twoich kafelków */
+            background-color: #1B365D;
             border: 2px solid #333;
-            border-radius: 16px;
+            border-radius: 18px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
         }
 
-        /* Kolory specyficzne dla przycisków */
-        .btn-view {
-            border-bottom: 8px solid #48bb78; /* Zielony jak Master */
-        }
-
-        .btn-edit {
-            border-bottom: 8px solid #f56565; /* Czerwony jak Sub */
-        }
+        .btn-view { border-bottom: 6px solid #48bb78; }
+        .btn-edit { border-bottom: 6px solid #f56565; }
 
         .menu-btn:hover {
-            transform: translateY(-10px);
+            transform: translateY(-8px);
             background-color: #254a80;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.7);
         }
 
-        .menu-btn:active {
-            transform: translateY(-2px);
-        }
+        .btn-icon { font-size: 2.2rem; }
 
-        .btn-icon {
-            font-size: 2.5rem;
-        }
-
-        /* Responsywność */
-        @media (max-width: 700px) {
-            .menu-container { flex-direction: column; }
-            h1 { font-size: 1.8rem; padding: 0 20px; }
+        @media (max-width: 750px) {
+            .menu-container { flex-direction: column; gap: 20px; }
+            .menu-btn { width: 240px; height: 130px; }
+            h1 { font-size: 1.6rem; padding: 0 20px; }
+            body { padding: 30px 0; }
+            background-size: 350px; /* Mniejsze logo na komórki */
         }
     </style>
 </head>
 <body>
 
-    <h1>Monitor czasu pracy urządzeń lini produkcyjnych Aseptic PET</h1>
+    <h1>Monitor czasu pracy urządzeń<br>linii produkcyjnych Aseptic PET</h1>
 
     <div class="menu-container">
         <button class="menu-btn btn-view" onclick="goView()">
