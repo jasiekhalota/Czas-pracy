@@ -29,7 +29,6 @@
 
         h1 { font-size: 2.2rem; color: #fff; margin-bottom: 30px; }
 
-        /* Przycisk ukryty wizualnie */
         #save-data-btn { display: none; }
 
         .groups-grid-wrapper {
@@ -59,8 +58,30 @@
 
         .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; }
 
-        /* Ukrycie wrapperów pól dat, by zostawić sam tytuł */
-        .main-start-wrapper { display: none; }
+        /* PRZYWRÓCONE I DOSTOSOWANE STYLE DLA PODGLĄDU STARTU */
+        .main-start-wrapper { 
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+
+        .main-start-label { font-size: 1.1rem; font-weight: bold; color: #48bb78; text-transform: uppercase; }
+
+        .main-start-display {
+            font-size: 1.2rem;
+            padding: 8px;
+            font-weight: bold;
+            color: #fff;
+            background: #252525;
+            border: 1px solid #555;
+            border-radius: 6px;
+            min-width: 160px;
+            text-align: center;
+        }
 
         .timers-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
 
@@ -71,7 +92,7 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            min-height: 180px; /* Zmniejszona wysokość z powodu braku inputów */
+            min-height: 180px;
             border: 1px solid #333;
         }
 
@@ -114,7 +135,6 @@
         .overdue { background: #3a1313 !important; }
         .overdue .t-value { color: #ff4d4d !important; }
 
-        /* Ukrycie pól wprowadzania dat podrzędnych */
         .sub-date-input { display: none; }
         
         @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
@@ -122,49 +142,28 @@
 </head>
 <body>
 
-    <h1>Monitor Czasu cykli Lini Aseptycznych PET</h1>
+    <h1>Monitor Czasu cykli Linii Aseptycznych PET</h1>
     
     <div class="groups-grid-wrapper"></div>
 
     <script>
         const CONFIG_LINII = {
-            1: {
-                title: "Aseptic A 1 CK",
-                machines: {
-                    master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
-                    sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
-                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" }
-                }
-            },
-            2: {
-                title: "Aseptic A 2 CL",
-                machines: {
-                    master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" },
-                    sub1:   { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " },
-                    sub2:   { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" }
-                }
-            },
-            3: {
-                title: "Aseptic A 3 CM",
-                machines: {
-                    master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" },
-                    sub1:   { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" },
-                    sub2:   { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" }
-                }
-            },
-            4: {
-                title: "Aseptic A 4 CN",
-                machines: {
-                    master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" },
-                    sub1:   { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" },
-                    sub2:   { label: "Past. A4", limit: 50, desc: "MAX 75h" }
-                }
-            }
+            1: { title: "Aseptic A 1 CK", machines: { master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" }, sub1: { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" }, sub2: { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" } } },
+            2: { title: "Aseptic A 2 CL", machines: { master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" }, sub1: { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " }, sub2: { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" } } },
+            3: { title: "Aseptic A 3 CM", machines: { master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" }, sub1: { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" }, sub2: { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" } } },
+            4: { title: "Aseptic A 4 CN", machines: { master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" }, sub1: { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" }, sub2: { label: "Past. A4", limit: 50, desc: "MAX 75h" } } }
         };
 
         const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
 
         function pad(n) { return n < 10 ? '0' + n : n; }
+
+        function formatujDate(dateStr) {
+            if(!dateStr) return "--.-- --:--";
+            const d = new Date(dateStr);
+            const dzienTyg = DNI_TYGODNIA[d.getDay()];
+            return `${dzienTyg} ${pad(d.getDate())}.${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
 
         function generateTimerBox(groupId, type) {
             const m = CONFIG_LINII[groupId].machines[type];
@@ -188,6 +187,10 @@
                 <div class="group-container">
                     <div class="group-header">
                         <div class="group-title">${line.title}</div>
+                        <div class="main-start-wrapper">
+                            <span class="main-start-label">Start Linii:</span>
+                            <div class="main-start-display" id="display-main-${id}">--.--.---- --:--</div>
+                        </div>
                     </div>
                     <div class="timers-row">
                         ${generateTimerBox(id, 'master')}
@@ -207,6 +210,13 @@
         function updateAll() {
             Object.keys(CONFIG_LINII).forEach(groupId => {
                 const startVal = window.SHARED_DATA['main-' + groupId];
+                
+                // Aktualizacja wyświetlacza "Start Linii"
+                const displayEl = document.getElementById(`display-main-${groupId}`);
+                if(displayEl) {
+                    displayEl.innerText = formatujDate(startVal);
+                }
+
                 ['master', 'sub1', 'sub2'].forEach(type => {
                     const m = CONFIG_LINII[groupId].machines[type];
                     const tEl = document.getElementById(`t-${groupId}-${type}`);
@@ -244,7 +254,6 @@
 
         generateAll();
         
-        // Słuchanie zmian w bazie danych - podgląd na żywo
         db.ref('monitorData').on('value', snap => {
             window.SHARED_DATA = snap.val() || {};
             updateAll();
