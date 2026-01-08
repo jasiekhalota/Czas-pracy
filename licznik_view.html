@@ -148,7 +148,7 @@
 
     <script>
         const CONFIG_LINII = {
-            1: { title: "Aseptic A 1 CK", machines: { master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" }, sub1: { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" }, sub2: { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" } } },
+            1: { title: "Aseptic A 1 CK", machines: { master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" }, sub1: { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" }, sub2: { label: "Past. A1", limit: 41, desc: "AWARYJNIE +4h MAX" } } },
             2: { title: "Aseptic A 2 CL", machines: { master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" }, sub1: { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " }, sub2: { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" } } },
             3: { title: "Aseptic A 3 CM", machines: { master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" }, sub1: { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" }, sub2: { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" } } },
             4: { title: "Aseptic A 4 CN", machines: { master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" }, sub1: { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" }, sub2: { label: "Past. A4", limit: 50, desc: "MAX 75h" } } }
@@ -238,7 +238,7 @@
                     fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
                     
                     if (diff <= 0) {
-                        tEl.innerText = "PRZEKROCZONO";
+                        tEl.innerText = "KONIEC CZASU";
                         box.classList.add('overdue');
                     } else {
                         box.classList.remove('overdue');
