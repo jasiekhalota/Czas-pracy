@@ -158,7 +158,7 @@
                 machines: {
                     master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
                     sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
-                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" }
+                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +4h MAX" }
                 }
             },
             2: {
@@ -270,7 +270,7 @@
                     fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
                     
                     if (diff <= 0) {
-                        tEl.innerText = "PRZEKROCZONO";
+                        tEl.innerText = "KONIEC CZASU";
                         box.classList.add('overdue');
                     } else {
                         box.classList.remove('overdue');
