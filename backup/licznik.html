@@ -1,1 +1,299 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Linii aseptycznych PET</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon-96x96.png" />
+    
+    <meta name="apple-mobile-web-app-title" content="Licznik" />
+    <link rel="manifest" href="site.webmanifest" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { font-size: 2.2rem; color: #fff; margin-bottom: 30px; }
+
+        #save-data-btn {
+            padding: 15px 30px; background: #27ae60; color: white; border: none; 
+            border-radius: 8px; cursor: pointer; margin-bottom: 30px; 
+            font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .groups-grid-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1800px;
+        }
+
+        .group-container {
+            background-color: #1B365D; 
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border: 1px solid #333;
+        }
+
+        /* POWIĘKSZONY NAGŁÓWEK I DATA STARTU */
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; }
+
+        .main-start-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+
+        .main-start-label { font-size: 1.1rem; font-weight: bold; color: #48bb78; text-transform: uppercase; }
+
+        input.main-date-input {
+            font-size: 1.2rem; /* Powiększona czcionka daty */
+            padding: 8px;
+            font-weight: bold;
+            color: #fff;
+            background: #252525;
+            border: 1px solid #555;
+            border-radius: 6px;
+        }
+
+        .timers-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+
+        .timer-box {
+            background: #252525; 
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 230px;
+            border: 1px solid #333;
+        }
+
+        .machine-desc {
+            font-size: 0.75rem;
+            color: #ffcc00;
+            background: rgba(0,0,0,0.4);
+            padding: 4px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .timer-box.master { border-top: 6px solid #48bb78; }
+        .timer-box.sub1 { border-top: 6px solid #ed8936; }
+        .timer-box.sub2 { border-top: 6px solid #f56565; }
+
+        .t-label { font-size: 0.85rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+
+        .t-footer { 
+            font-size: 1.1rem; 
+            color: #cbd5e0; 
+            margin: 15px 0 5px 0; 
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .t-value { 
+            font-family: 'Consolas', monospace;
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: #00ff00;
+            background: #121212; 
+            padding: 12px 5px; 
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+
+        .overdue { background: #3a1313 !important; }
+        .overdue .t-value { color: #ff4d4d !important; }
+
+        input.sub-date-input { background: #2d2d2d; color: #fff; border: 1px solid #444; padding: 5px; width: 90%; font-size: 0.8rem; }
+        
+        @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <h1>System Monitorowania Cykli Produkcyjnych</h1>
+    <button id="save-data-btn" onclick="saveDataToFirebase()">ZAPISZ I SYNCHRONIZUJ CZAS</button>
+    
+    <div class="groups-grid-wrapper"></div>
+
+    <script>
+        const CONFIG_LINII = {
+            1: {
+                title: "Aseptic A 1",
+                machines: {
+                    master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
+                    sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
+                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +4h MAX" }
+                }
+            },
+            2: {
+                title: "Aseptic A 2",
+                machines: {
+                    master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" },
+                    sub1:   { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " },
+                    sub2:   { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" }
+                }
+            },
+            3: {
+                title: "Aseptic A 3",
+                machines: {
+                    master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" },
+                    sub1:   { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" },
+                    sub2:   { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" }
+                }
+            },
+            4: {
+                title: "Aseptic A 4",
+                machines: {
+                    master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" },
+                    sub1:   { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" },
+                    sub2:   { label: "Past. A4", limit: 50, desc: "MAX 75h" }
+                }
+            }
+        };
+
+        // Skróty dni tygodnia
+        const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
+
+        function pad(n) { return n < 10 ? '0' + n : n; }
+
+        function generateTimerBox(groupId, type) {
+            const m = CONFIG_LINII[groupId].machines[type];
+            const isMaster = type === 'master';
+            return `
+            <div class="timer-box ${type}" id="box-${groupId}-${type}">
+                <div class="machine-desc">${m.desc}</div>
+                <div class="t-label">${m.label} (${m.limit}h)</div>
+                ${!isMaster ? `<input type="datetime-local" class="sub-date-input" id="sub-${groupId}-${type}" onchange="saveAndUpdate('sub-${groupId}-${type}')">` : '<div style="height:32px"></div>'}
+                <div style="margin-top: auto;">
+                    <div class="t-footer" id="f-${groupId}-${type}">-- --.-- --:--</div>
+                    <div class="t-value" id="t-${groupId}-${type}">0D 00h 00m 00s</div>
+                </div>
+            </div>`;
+        }
+
+        function generateAll() {
+            const wrapper = document.querySelector('.groups-grid-wrapper');
+            let html = '';
+            Object.keys(CONFIG_LINII).forEach(id => {
+                const line = CONFIG_LINII[id];
+                html += `
+                <div class="group-container">
+                    <div class="group-header">
+                        <div class="group-title">${line.title}</div>
+                        <div class="main-start-wrapper">
+                            <span class="main-start-label">Start Linii:</span>
+                            <input type="datetime-local" class="main-date-input" id="main-${id}" onchange="saveAndUpdate('main-${id}')">
+                        </div>
+                    </div>
+                    <div class="timers-row">
+                        ${generateTimerBox(id, 'master')}
+                        ${generateTimerBox(id, 'sub1')}
+                        ${generateTimerBox(id, 'sub2')}
+                    </div>
+                </div>`;
+            });
+            wrapper.innerHTML = html;
+        }
+
+        window.SHARED_DATA = {};
+        const firebaseConfig = { databaseURL: "https://dane-17dae-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function saveAndUpdate(id) {
+            window.SHARED_DATA[id] = document.getElementById(id).value;
+            updateAll();
+        }
+
+        function saveDataToFirebase() {
+            db.ref('monitorData').set(window.SHARED_DATA).then(() => alert("Zapisano pomyślnie!"));
+        }
+
+        function updateAll() {
+            Object.keys(CONFIG_LINII).forEach(groupId => {
+                const startVal = window.SHARED_DATA['main-' + groupId];
+                ['master', 'sub1', 'sub2'].forEach(type => {
+                    const m = CONFIG_LINII[groupId].machines[type];
+                    const tEl = document.getElementById(`t-${groupId}-${type}`);
+                    const fEl = document.getElementById(`f-${groupId}-${type}`);
+                    const box = document.getElementById(`box-${groupId}-${type}`);
+
+                    if (!startVal) {
+                        tEl.innerText = "--D --h --m --s";
+                        fEl.innerText = "-- --.-- --:--";
+                        return;
+                    }
+
+                    const subVal = window.SHARED_DATA[`sub-${groupId}-${type}`];
+                    const startTime = (type !== 'master' && subVal) ? new Date(subVal) : new Date(startVal);
+                    const target = new Date(startTime.getTime() + (m.limit * 3600000));
+                    const diff = target - new Date();
+
+                    // Formaty daty z dniem tygodnia
+                    const dzienTyg = DNI_TYGODNIA[target.getDay()];
+                    fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
+                    
+                    if (diff <= 0) {
+                        tEl.innerText = "KONIEC CZASU";
+                        box.classList.add('overdue');
+                    } else {
+                        box.classList.remove('overdue');
+                        const d = Math.floor(diff / 86400000);
+                        const h = Math.floor((diff % 86400000) / 3600000);
+                        const min = Math.floor((diff % 3600000) / 60000);
+                        const sec = Math.floor((diff % 60000) / 1000);
+                        tEl.innerText = `${d}D ${pad(h)}h ${pad(min)}m ${pad(sec)}s`;
+                    }
+                });
+            });
+        }
+
+        generateAll();
+        db.ref('monitorData').on('value', snap => {
+            window.SHARED_DATA = snap.val() || {};
+            Object.keys(window.SHARED_DATA).forEach(key => {
+                const el = document.getElementById(key);
+                if(el) el.value = window.SHARED_DATA[key];
+            });
+            updateAll();
+        });
+        setInterval(updateAll, 1000);
+    </script>
+</body>
+</html>
