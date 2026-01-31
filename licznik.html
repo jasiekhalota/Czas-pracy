@@ -8,13 +8,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="shortcut icon" href="favicon.ico" />
     
     <link rel="apple-touch-icon" sizes="180x180" href="favicon-96x96.png" />
-    
-    <meta name="apple-mobile-web-app-title" content="Licznik" />
     <link rel="manifest" href="site.webmanifest" />
 
     <style>
@@ -51,9 +49,16 @@
             padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
             border: 1px solid #333;
+            transition: all 0.5s ease;
         }
 
-        /* POWIĘKSZONY NAGŁÓWEK I DATA STARTU */
+        /* STYL DLA ZATRZYMANEJ LINII */
+        .group-container.line-stopped {
+            filter: grayscale(0.8) brightness(0.5);
+            opacity: 0.6;
+        }
+
+        /* NAGŁÓWEK KAFELKA */
         .group-header {
             display: flex;
             justify-content: space-between;
@@ -63,7 +68,7 @@
             border-bottom: 2px solid rgba(255,255,255,0.1);
         }
 
-        .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; }
+        .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; width: 250px;}
 
         .main-start-wrapper {
             display: flex;
@@ -78,7 +83,7 @@
         .main-start-label { font-size: 1.1rem; font-weight: bold; color: #48bb78; text-transform: uppercase; }
 
         input.main-date-input {
-            font-size: 1.2rem; /* Powiększona czcionka daty */
+            font-size: 1.2rem; 
             padding: 8px;
             font-weight: bold;
             color: #fff;
@@ -86,6 +91,25 @@
             border: 1px solid #555;
             border-radius: 6px;
         }
+
+        /* Przycisk STOP/START (dawniej reset) */
+        .reset-btn {
+            background-color: #c53030;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            margin-left: 10px;
+        }
+        .reset-btn:hover { background-color: #e53e3e; }
+
+        .start-btn { background-color: #27ae60 !important; }
+        .stop-btn { background-color: #c53030 !important; }
 
         .timers-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
 
@@ -115,7 +139,13 @@
         .timer-box.sub1 { border-top: 6px solid #ed8936; }
         .timer-box.sub2 { border-top: 6px solid #f56565; }
 
-        .t-label { font-size: 0.85rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .t-label { 
+            font-size: 1.3rem;
+            color: #a0aec0; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            margin-bottom: 8px; 
+        }
 
         .t-footer { 
             font-size: 1.1rem; 
@@ -139,9 +169,19 @@
         .overdue { background: #3a1313 !important; }
         .overdue .t-value { color: #ff4d4d !important; }
 
-        input.sub-date-input { background: #2d2d2d; color: #fff; border: 1px solid #444; padding: 5px; width: 90%; font-size: 0.8rem; }
+        input.sub-date-input { 
+            background: #2d2d2d; 
+            color: #fff; 
+            border: 1px solid #444; 
+            padding: 8px; 
+            width: 90%; 
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
         
         @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
+
     </style>
 </head>
 <body>
@@ -158,7 +198,7 @@
                 machines: {
                     master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
                     sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
-                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +4h MAX" }
+                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" }
                 }
             },
             2: {
@@ -187,7 +227,6 @@
             }
         };
 
-        // Skróty dni tygodnia
         const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
 
         function pad(n) { return n < 10 ? '0' + n : n; }
@@ -199,7 +238,7 @@
             <div class="timer-box ${type}" id="box-${groupId}-${type}">
                 <div class="machine-desc">${m.desc}</div>
                 <div class="t-label">${m.label} (${m.limit}h)</div>
-                ${!isMaster ? `<input type="datetime-local" class="sub-date-input" id="sub-${groupId}-${type}" onchange="saveAndUpdate('sub-${groupId}-${type}')">` : '<div style="height:32px"></div>'}
+                ${!isMaster ? `<input type="datetime-local" class="sub-date-input" id="sub-${groupId}-${type}" onchange="saveAndUpdate('sub-${groupId}-${type}')">` : '<div style="height:45px"></div>'}
                 <div style="margin-top: auto;">
                     <div class="t-footer" id="f-${groupId}-${type}">-- --.-- --:--</div>
                     <div class="t-value" id="t-${groupId}-${type}">0D 00h 00m 00s</div>
@@ -216,9 +255,14 @@
                 <div class="group-container">
                     <div class="group-header">
                         <div class="group-title">${line.title}</div>
+                        
                         <div class="main-start-wrapper">
                             <span class="main-start-label">Start Linii:</span>
                             <input type="datetime-local" class="main-date-input" id="main-${id}" onchange="saveAndUpdate('main-${id}')">
+                        </div>
+
+                        <div>
+                            <button id="btn-toggle-${id}" class="reset-btn stop-btn" onclick="toggleLine(${id})">LINIA STOP</button>
                         </div>
                     </div>
                     <div class="timers-row">
@@ -245,8 +289,62 @@
             db.ref('monitorData').set(window.SHARED_DATA).then(() => alert("Zapisano pomyślnie!"));
         }
 
+        function toggleLine(groupId) {
+            const currentStatus = window.SHARED_DATA['status-' + groupId] || 'active';
+            
+            if (currentStatus === 'active') {
+                // ZATRZYMANIE LINII
+                if(!confirm("Zatrzymać linię " + CONFIG_LINII[groupId].title + " i wyzerować czasy?")) return;
+                
+                window.SHARED_DATA['status-' + groupId] = 'stopped';
+                
+                // Zerowanie danych przy zatrzymaniu
+                window.SHARED_DATA['main-' + groupId] = "";
+                window.SHARED_DATA['sub-' + groupId + '-sub1'] = "";
+                window.SHARED_DATA['sub-' + groupId + '-sub2'] = "";
+                
+                // Czyścimy inputy wizualnie
+                const mainInput = document.getElementById('main-' + groupId);
+                if(mainInput) mainInput.value = "";
+
+                if(document.getElementById(`sub-${groupId}-sub1`)) document.getElementById(`sub-${groupId}-sub1`).value = "";
+                if(document.getElementById(`sub-${groupId}-sub2`)) document.getElementById(`sub-${groupId}-sub2`).value = "";
+            } else {
+                // START LINII
+                window.SHARED_DATA['status-' + groupId] = 'active';
+            }
+
+            saveDataToFirebase();
+            updateAll();
+        }
+
         function updateAll() {
             Object.keys(CONFIG_LINII).forEach(groupId => {
+                // --- LOGIKA STATUSU LINII ---
+                const status = window.SHARED_DATA['status-' + groupId] || 'active';
+                const container = document.querySelectorAll('.group-container')[groupId-1];
+                const btn = document.getElementById('btn-toggle-' + groupId);
+
+                // Aktualizacja wyglądu kafelka i przycisku
+                if (status === 'stopped') {
+                    container.classList.add('line-stopped');
+                    if(btn) {
+                        btn.innerText = "LINIA START";
+                        btn.className = "reset-btn start-btn";
+                    }
+                    const mainInput = document.getElementById('main-' + groupId);
+                    if(mainInput) mainInput.disabled = true;
+                } else {
+                    container.classList.remove('line-stopped');
+                    if(btn) {
+                        btn.innerText = "LINIA STOP";
+                        btn.className = "reset-btn stop-btn";
+                    }
+                    const mainInput = document.getElementById('main-' + groupId);
+                    if(mainInput) mainInput.disabled = false;
+                }
+
+                // --- LOGIKA LICZNIKÓW ---
                 const startVal = window.SHARED_DATA['main-' + groupId];
                 ['master', 'sub1', 'sub2'].forEach(type => {
                     const m = CONFIG_LINII[groupId].machines[type];
@@ -257,6 +355,7 @@
                     if (!startVal) {
                         tEl.innerText = "--D --h --m --s";
                         fEl.innerText = "-- --.-- --:--";
+                        box.classList.remove('overdue');
                         return;
                     }
 
@@ -265,12 +364,11 @@
                     const target = new Date(startTime.getTime() + (m.limit * 3600000));
                     const diff = target - new Date();
 
-                    // Formaty daty z dniem tygodnia
                     const dzienTyg = DNI_TYGODNIA[target.getDay()];
                     fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
                     
                     if (diff <= 0) {
-                        tEl.innerText = "KONIEC CZASU";
+                        tEl.innerText = "PRZEKROCZONO";
                         box.classList.add('overdue');
                     } else {
                         box.classList.remove('overdue');
@@ -289,7 +387,7 @@
             window.SHARED_DATA = snap.val() || {};
             Object.keys(window.SHARED_DATA).forEach(key => {
                 const el = document.getElementById(key);
-                if(el) el.value = window.SHARED_DATA[key];
+                if(el && !key.startsWith('status-')) el.value = window.SHARED_DATA[key];
             });
             updateAll();
         });

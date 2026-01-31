@@ -45,6 +45,13 @@
             padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
             border: 1px solid #333;
+            transition: all 0.8s ease; /* [cite: 15] */
+        }
+
+        /* STYL DLA ZATRZYMANEJ LINII (WIDOK) [cite: 14] */
+        .group-container.line-stopped {
+            filter: grayscale(0.9) brightness(0.4);
+            opacity: 0.5; /* [cite: 15] */
         }
 
         .group-header {
@@ -56,30 +63,36 @@
             border-bottom: 2px solid rgba(255,255,255,0.1);
         }
 
-        .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; }
+        .group-title { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0; width: 280px; }
 
-        /* PRZYWRÓCONE I DOSTOSOWANE STYLE DLA PODGLĄDU STARTU */
-        .main-start-wrapper { 
+        .main-start-wrapper {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 15px;
             background: rgba(0,0,0,0.2);
-            padding: 10px 15px;
+            padding: 10px 25px;
             border-radius: 10px;
             border: 1px solid #444;
+            min-width: 350px;
         }
-
-        .main-start-label { font-size: 1.1rem; font-weight: bold; color: #48bb78; text-transform: uppercase; }
-
-        .main-start-display {
-            font-size: 1.2rem;
-            padding: 8px;
+        
+        .main-start-label { 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            color: #777; 
+            text-transform: uppercase;
+            white-space: nowrap; 
+        }
+        
+        input.main-date-input {
+            font-size: 1.2rem; 
+            padding: 8px;      
             font-weight: bold;
-            color: #fff;
-            background: #252525;
-            border: 1px solid #555;
-            border-radius: 6px;
-            min-width: 160px;
+            color: #aaa;
+            background: transparent;
+            border: none;
+            width: 220px;
             text-align: center;
         }
 
@@ -92,7 +105,7 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            min-height: 180px;
+            min-height: 230px; 
             border: 1px solid #333;
         }
 
@@ -111,7 +124,7 @@
         .timer-box.sub1 { border-top: 6px solid #ed8936; }
         .timer-box.sub2 { border-top: 6px solid #f56565; }
 
-        .t-label { font-size: 0.85rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .t-label { font-size: 1.3rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
 
         .t-footer { 
             font-size: 1.1rem; 
@@ -135,42 +148,76 @@
         .overdue { background: #3a1313 !important; }
         .overdue .t-value { color: #ff4d4d !important; }
 
-        .sub-date-input { display: none; }
+        input.sub-date-input { 
+            display: block;
+            background: #222; 
+            color: #888; 
+            border: 1px solid #333; 
+            padding: 5px; 
+            width: 90%; 
+            font-size: 1.0rem;
+            margin: 0 auto;
+            text-align: center;
+            pointer-events: none; 
+        }
         
         @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <h1>Monitor Czasu cykli Linii Aseptycznych PET</h1>
+    <h1>Monitor Czasu cykli Lini Aseptycznych PET</h1>
     
     <div class="groups-grid-wrapper"></div>
 
     <script>
         const CONFIG_LINII = {
-            1: { title: "Aseptic A 1 CK", machines: { master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" }, sub1: { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" }, sub2: { label: "Past. A1", limit: 41, desc: "AWARYJNIE +4h MAX" } } },
-            2: { title: "Aseptic A 2 CL", machines: { master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" }, sub1: { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " }, sub2: { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" } } },
-            3: { title: "Aseptic A 3 CM", machines: { master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" }, sub1: { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" }, sub2: { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" } } },
-            4: { title: "Aseptic A 4 CN", machines: { master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" }, sub1: { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" }, sub2: { label: "Past. A4", limit: 50, desc: "MAX 75h" } } }
+            1: {
+                title: "Aseptic A 1 CK",
+                machines: {
+                    master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
+                    sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
+                    sub2:   { label: "Past. A1", limit: 41, desc: "AWARYJNIE +2h MAX" }
+                }
+            },
+            2: {
+                title: "Aseptic A 2 CL",
+                machines: {
+                    master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" },
+                    sub1:   { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " },
+                    sub2:   { label: "Past. A2", limit: 32, desc: "AWARYJNIE +2h MAX" }
+                }
+            },
+            3: {
+                title: "Aseptic A 3 CM",
+                machines: {
+                    master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" },
+                    sub1:   { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" },
+                    sub2:   { label: "Past. A3", limit: 38, desc: "AWARYJNIE +2h MAX" }
+                }
+            },
+            4: {
+                title: "Aseptic A 4 CN",
+                machines: {
+                    master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" },
+                    sub1:   { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" },
+                    sub2:   { label: "Past. A4", limit: 50, desc: "MAX 75h" }
+                }
+            }
         };
 
         const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
 
         function pad(n) { return n < 10 ? '0' + n : n; }
 
-        function formatujDate(dateStr) {
-            if(!dateStr) return "--.-- --:--";
-            const d = new Date(dateStr);
-            const dzienTyg = DNI_TYGODNIA[d.getDay()];
-            return `${dzienTyg} ${pad(d.getDate())}.${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
-
         function generateTimerBox(groupId, type) {
             const m = CONFIG_LINII[groupId].machines[type];
+            const isMaster = type === 'master';
             return `
             <div class="timer-box ${type}" id="box-${groupId}-${type}">
                 <div class="machine-desc">${m.desc}</div>
                 <div class="t-label">${m.label} (${m.limit}h)</div>
+                ${!isMaster ? `<input type="datetime-local" disabled class="sub-date-input" id="sub-${groupId}-${type}">` : '<div style="height:35px"></div>'}
                 <div style="margin-top: auto;">
                     <div class="t-footer" id="f-${groupId}-${type}">-- --.-- --:--</div>
                     <div class="t-value" id="t-${groupId}-${type}">0D 00h 00m 00s</div>
@@ -187,10 +234,13 @@
                 <div class="group-container">
                     <div class="group-header">
                         <div class="group-title">${line.title}</div>
+                        
                         <div class="main-start-wrapper">
                             <span class="main-start-label">Start Linii:</span>
-                            <div class="main-start-display" id="display-main-${id}">--.--.---- --:--</div>
+                            <input type="datetime-local" disabled class="main-date-input" id="main-${id}">
                         </div>
+
+                        <div style="width: 280px;"></div>
                     </div>
                     <div class="timers-row">
                         ${generateTimerBox(id, 'master')}
@@ -209,23 +259,36 @@
 
         function updateAll() {
             Object.keys(CONFIG_LINII).forEach(groupId => {
+                // --- POBIERANIE I OBSŁUGA STATUSU  ---
+                const status = window.SHARED_DATA['status-' + groupId] || 'active';
+                const containers = document.querySelectorAll('.group-container');
+                const container = containers[groupId-1];
+
+                if (status === 'stopped') {
+                    container.classList.add('line-stopped');
+                } else {
+                    container.classList.remove('line-stopped');
+                }
+
+                // --- ISTNIEJĄCA LOGIKA CZASU [cite: 17] ---
                 const startVal = window.SHARED_DATA['main-' + groupId];
                 
-                // Aktualizacja wyświetlacza "Start Linii"
-                const displayEl = document.getElementById(`display-main-${groupId}`);
-                if(displayEl) {
-                    displayEl.innerText = formatujDate(startVal);
-                }
+                const mainInput = document.getElementById('main-' + groupId);
+                if(mainInput) mainInput.value = startVal || '';
 
                 ['master', 'sub1', 'sub2'].forEach(type => {
                     const m = CONFIG_LINII[groupId].machines[type];
                     const tEl = document.getElementById(`t-${groupId}-${type}`);
                     const fEl = document.getElementById(`f-${groupId}-${type}`);
                     const box = document.getElementById(`box-${groupId}-${type}`);
+                    
+                    const subInput = document.getElementById(`sub-${groupId}-${type}`);
+                    if(subInput) subInput.value = window.SHARED_DATA[`sub-${groupId}-${type}`] || '';
 
                     if (!startVal) {
                         tEl.innerText = "--D --h --m --s";
                         fEl.innerText = "-- --.-- --:--";
+                        box.classList.remove('overdue');
                         return;
                     }
 
@@ -238,7 +301,7 @@
                     fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
                     
                     if (diff <= 0) {
-                        tEl.innerText = "KONIEC CZASU";
+                        tEl.innerText = "PRZEKROCZONO";
                         box.classList.add('overdue');
                     } else {
                         box.classList.remove('overdue');
