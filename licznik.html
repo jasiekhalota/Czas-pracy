@@ -368,7 +368,7 @@
                     fEl.innerText = `${dzienTyg} ${pad(target.getDate())}.${pad(target.getMonth()+1)} ${pad(target.getHours())}:${pad(target.getMinutes())}`;
                     
                     if (diff <= 0) {
-                        tEl.innerText = "PRZEKROCZONO";
+                        tEl.innerText = "MYCIE";
                         box.classList.add('overdue');
                     } else {
                         box.classList.remove('overdue');
@@ -394,4 +394,5 @@
         setInterval(updateAll, 1000);
     </script>
 </body>
+
 </html>
