@@ -180,6 +180,12 @@
             margin-top: 5px;
         }
         
+		/* Zmiana koloru ikonki kalendarza na biały dla wszystkich pól daty */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    }
+		
         @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
 
     </style>
@@ -194,7 +200,7 @@
     <script>
         const CONFIG_LINII = {
             1: {
-                title: "Aseptic A 1",
+                title: "Aseptic A1 CK",
                 machines: {
                     master: { label: "Rozlew CK", limit: 140, desc: "AWARYJNIE +4h MAX" },
                     sub1:   { label: "Zb. Asep. A1", limit: 85, desc: "AWARYJNIE +2h MAX" },
@@ -202,7 +208,7 @@
                 }
             },
             2: {
-                title: "Aseptic A 2",
+                title: "Aseptic A2 CL",
                 machines: {
                     master: { label: "Rozlew CL", limit: 140, desc: "AWARYJNIE +8h MAX" },
                     sub1:   { label: "Zb. Asep. A2", limit: 72, desc: "AWARYJNIE +5h MAX " },
@@ -210,7 +216,7 @@
                 }
             },
             3: {
-                title: "Aseptic A 3",
+                title: "Aseptic A3 CM",
                 machines: {
                     master: { label: "Rozlew CM", limit: 168, desc: "AWARYJNIE +10h MAX" },
                     sub1:   { label: "Zb. Asep. A3", limit: 120, desc: "WATERR 120h | RESZTA 96H" },
@@ -218,7 +224,7 @@
                 }
             },
             4: {
-                title: "Aseptic A 4",
+                title: "Aseptic A4 CN",
                 machines: {
                     master: { label: "Rozlew CN", limit: 168, desc: "Awaryjnie +?h" },
                     sub1:   { label: "Zb. Asep. A4", limit: 120, desc: "Do 210h" },
