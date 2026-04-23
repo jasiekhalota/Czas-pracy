@@ -263,12 +263,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
                         <div class="group-title">${line.title}</div>
                         
                         <div class="main-start-wrapper">
-                            <span class="main-start-label">Start Linii:</span>
+                            <span class="main-start-label">Startuj Linię:</span>
                             <input type="datetime-local" class="main-date-input" id="main-${id}" onchange="saveAndUpdate('main-${id}')">
                         </div>
 
                         <div>
-                            <button id="btn-toggle-${id}" class="reset-btn stop-btn" onclick="toggleLine(${id})">LINIA STOP</button>
+                            <button id="btn-toggle-${id}" class="reset-btn stop-btn" onclick="toggleLine(${id})">Wyłącz Linię</button>
                         </div>
                     </div>
                     <div class="timers-row">
@@ -335,7 +335,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
                 if (status === 'stopped') {
                     container.classList.add('line-stopped');
                     if(btn) {
-                        btn.innerText = "LINIA START";
+                        btn.innerText = "Startuj Linię";
                         btn.className = "reset-btn start-btn";
                     }
                     const mainInput = document.getElementById('main-' + groupId);
@@ -343,7 +343,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
                 } else {
                     container.classList.remove('line-stopped');
                     if(btn) {
-                        btn.innerText = "LINIA STOP";
+                        btn.innerText = "Wyłącz Linię";
                         btn.className = "reset-btn stop-btn";
                     }
                     const mainInput = document.getElementById('main-' + groupId);
