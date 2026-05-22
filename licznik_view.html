@@ -206,6 +206,31 @@
             }
         };
 
+        const CONFIG_A4 = {
+            homo: {
+                master: { limit: 120, desc: "Z HOMOGENIZATOREM – MAX 120h" },
+                sub1:   { limit: 120, desc: "Z HOMOGENIZATOREM – MAX 120h" },
+                sub2:   { limit: 50,  desc: "Z HOMOGENIZATOREM – MAX 50h"  }
+            },
+            bez: {
+                master: { limit: 168, desc: "BEZ HOMOGENIZATORA – MAX 168h" },
+                sub1:   { limit: 210, desc: "BEZ HOMOGENIZATORA – MAX 210h" },
+                sub2:   { limit: 60,  desc: "BEZ HOMOGENIZATORA – MAX 60h"  }
+            }
+        };
+
+        function applyHomoMode(groupId, mode) {
+            const cfg = CONFIG_A4[mode] || CONFIG_A4['bez'];
+            ['master', 'sub1', 'sub2'].forEach(type => {
+                CONFIG_LINII[groupId].machines[type].limit = cfg[type].limit;
+                CONFIG_LINII[groupId].machines[type].desc  = cfg[type].desc;
+                const labelEl = document.querySelector(`#box-${groupId}-${type} .t-label`);
+                const descEl  = document.querySelector(`#box-${groupId}-${type} .machine-desc`);
+                if (labelEl) labelEl.innerText = `${CONFIG_LINII[groupId].machines[type].label} (${cfg[type].limit}h)`;
+                if (descEl)  descEl.innerText  = cfg[type].desc;
+            });
+        }
+
         const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
 
         function pad(n) { return n < 10 ? '0' + n : n; }
@@ -319,6 +344,8 @@
         
         db.ref('monitorData').on('value', snap => {
             window.SHARED_DATA = snap.val() || {};
+            const savedMode = window.SHARED_DATA['homo-mode-4'] || 'homo';
+            applyHomoMode(4, savedMode);
             updateAll();
         });
         

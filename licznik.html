@@ -188,6 +188,63 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 		
         @media (max-width: 1300px) { .groups-grid-wrapper { grid-template-columns: 1fr; } }
 
+        /* === TOGGLE HOMO A4 === */
+        .homo-toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0,0,0,0.25);
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+
+        .homo-toggle-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #aaa;
+            white-space: nowrap;
+            min-width: 70px;
+            text-align: center;
+            transition: color 0.3s;
+        }
+
+        .homo-toggle-label.active { color: #48bb78; }
+
+        .toggle-switch {
+            position: relative;
+            width: 58px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input { display: none; }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #c53030;
+            border-radius: 28px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            left: 3px;
+            top: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider { background: #27ae60; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(30px); }
+
     </style>
 </head>
 <body>
@@ -233,6 +290,77 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
             }
         };
 
+        // === KONFIGURACJE HOMO DLA LINII A4 ===
+        const CONFIG_A4 = {
+            homo: {
+                master: { limit: 120, desc: "Z HOMOGENIZATOREM – MAX 120h" },
+                sub1:   { limit: 120, desc: "Z HOMOGENIZATOREM – MAX 120h" },
+                sub2:   { limit: 50,  desc: "Z HOMOGENIZATOREM – MAX 50h"  }
+            },
+            bez: {
+                master: { limit: 168, desc: "BEZ HOMOGENIZATORA – MAX 168h" },
+                sub1:   { limit: 210, desc: "BEZ HOMOGENIZATORA – MAX 210h" },
+                sub2:   { limit: 60,  desc: "BEZ HOMOGENIZATORA – MAX 60h"  }
+            }
+        };
+
+        function onHomoToggle(groupId) {
+            const isHomo = !document.getElementById('homo-toggle-' + groupId).checked;
+            const mode = isHomo ? 'homo' : 'bez';
+            const cfg = CONFIG_A4[mode];
+
+            // Aktualizuj CONFIG_LINII na żywo
+            ['master', 'sub1', 'sub2'].forEach(type => {
+                CONFIG_LINII[groupId].machines[type].limit = cfg[type].limit;
+                CONFIG_LINII[groupId].machines[type].desc  = cfg[type].desc;
+            });
+
+            // Zapisz tryb do Firebase
+            window.SHARED_DATA['homo-mode-' + groupId] = mode;
+            db.ref('monitorData/homo-mode-' + groupId).set(mode);
+
+            // Odśwież etykiety w DOM
+            const types = ['master', 'sub1', 'sub2'];
+            types.forEach(type => {
+                const m = CONFIG_LINII[groupId].machines[type];
+                const labelEl = document.querySelector(`#box-${groupId}-${type} .t-label`);
+                const descEl  = document.querySelector(`#box-${groupId}-${type} .machine-desc`);
+                if (labelEl) labelEl.innerText = `${m.label} (${m.limit}h)`;
+                if (descEl)  descEl.innerText  = m.desc;
+            });
+
+            // Podświetl aktywną etykietę
+            document.getElementById('label-homo-on-'  + groupId).classList.toggle('active',  isHomo);
+            document.getElementById('label-homo-off-' + groupId).classList.toggle('active', !isHomo);
+
+            updateAll();
+        }
+
+        function applyHomoMode(groupId, mode) {
+            const cfg = CONFIG_A4[mode] || CONFIG_A4['bez'];
+            ['master', 'sub1', 'sub2'].forEach(type => {
+                CONFIG_LINII[groupId].machines[type].limit = cfg[type].limit;
+                CONFIG_LINII[groupId].machines[type].desc  = cfg[type].desc;
+            });
+
+            const toggle = document.getElementById('homo-toggle-' + groupId);
+            if (toggle) toggle.checked = (mode === 'bez');
+
+            const labelOn  = document.getElementById('label-homo-on-'  + groupId);
+            const labelOff = document.getElementById('label-homo-off-' + groupId);
+            if (labelOn)  labelOn.classList.toggle('active',  mode === 'homo');
+            if (labelOff) labelOff.classList.toggle('active', mode === 'bez');
+
+            const types = ['master', 'sub1', 'sub2'];
+            types.forEach(type => {
+                const m = CONFIG_LINII[groupId].machines[type];
+                const labelEl = document.querySelector(`#box-${groupId}-${type} .t-label`);
+                const descEl  = document.querySelector(`#box-${groupId}-${type} .machine-desc`);
+                if (labelEl) labelEl.innerText = `${m.label} (${m.limit}h)`;
+                if (descEl)  descEl.innerText  = m.desc;
+            });
+        }
+
         const DNI_TYGODNIA = ['ND.', 'PN.', 'WT.', 'ŚR.', 'CZW.', 'PT.', 'SOB.'];
 
         function pad(n) { return n < 10 ? '0' + n : n; }
@@ -267,15 +395,24 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
                             <input type="datetime-local" class="main-date-input" id="main-${id}" onchange="saveAndUpdate('main-${id}')">
                         </div>
 
-                        <div>
-                            <button id="btn-toggle-${id}" class="reset-btn stop-btn" onclick="toggleLine(${id})">Wyłącz Linię</button>
-                        </div>
+                        <button id="btn-toggle-${id}" class="reset-btn stop-btn" onclick="toggleLine(${id})">Wyłącz Linię</button>
                     </div>
                     <div class="timers-row">
                         ${generateTimerBox(id, 'master')}
                         ${generateTimerBox(id, 'sub1')}
                         ${generateTimerBox(id, 'sub2')}
                     </div>
+                    ${id == 4 ? `
+                    <div style="display:flex; justify-content:center; margin-top:18px;">
+                        <div class="homo-toggle-wrapper">
+                            <span class="homo-toggle-label active" id="label-homo-on-4">Z HOMO</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="homo-toggle-4" onchange="onHomoToggle(4)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="homo-toggle-label" id="label-homo-off-4">BEZ HOMO</span>
+                        </div>
+                    </div>` : ''}
                 </div>`;
             });
             wrapper.innerHTML = html;
@@ -393,8 +530,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
             window.SHARED_DATA = snap.val() || {};
             Object.keys(window.SHARED_DATA).forEach(key => {
                 const el = document.getElementById(key);
-                if(el && !key.startsWith('status-')) el.value = window.SHARED_DATA[key];
+                if(el && !key.startsWith('status-') && !key.startsWith('homo-mode-')) el.value = window.SHARED_DATA[key];
             });
+            // Przywróć tryb homo dla linii A4
+            const savedMode = window.SHARED_DATA['homo-mode-4'] || 'homo';
+            applyHomoMode(4, savedMode);
             updateAll();
         });
         setInterval(updateAll, 1000);
