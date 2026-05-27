@@ -44,7 +44,8 @@
         }
 
         .group-container {
-            background-color: #1B365D; 
+            background-color: #1B365D;
+            transition: background-color 0.5s ease; 
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
@@ -52,10 +53,20 @@
             transition: all 0.5s ease;
         }
 
-        /* STYL DLA ZATRZYMANEJ LINII */
+        /* STYL DLA ZATRZYMANEJ LINII – przyciemniamy wnętrze, ale nie przycisk */
+        .group-container.line-stopped .group-title,
+        .group-container.line-stopped .main-start-wrapper,
+        .group-container.line-stopped .timers-row,
+        .group-container.line-stopped .homo-toggle-wrapper {
+            filter: grayscale(1) brightness(0.2);
+            opacity: 0.35;
+            transition: all 0.5s ease;
+        }
+
+        /* Tło kontenera przy zatrzymaniu – neutralna czerń zamiast granatowego */
         .group-container.line-stopped {
-            filter: grayscale(0.8) brightness(0.5);
-            opacity: 0.6;
+            background-color: #1a1a1a;
+            transition: background-color 0.5s ease;
         }
 
         /* NAGŁÓWEK KAFELKA */
