@@ -126,10 +126,27 @@
 
         .t-label { font-size: 1.3rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
 
+        .praca-do-wrapper {
+            border: 2px solid #00ff00;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+        }
+
+        .praca-do-label {
+            font-size: 1.1rem;
+            color: #cbd5e0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+            margin-bottom: 2px;
+            font-weight: 800;
+        }
+
         .t-footer { 
             font-size: 1.1rem; 
             color: #cbd5e0; 
-            margin: 15px 0 5px 0; 
+            margin: 0 0 5px 0; 
             font-weight: 800;
             letter-spacing: 0.5px;
         }
@@ -244,7 +261,10 @@
                 <div class="t-label">${m.label} (${m.limit}h)</div>
                 ${!isMaster ? `<input type="datetime-local" disabled class="sub-date-input" id="sub-${groupId}-${type}">` : '<div style="height:35px"></div>'}
                 <div style="margin-top: auto;">
-                    <div class="t-footer" id="f-${groupId}-${type}">-- --.-- --:--</div>
+                    <div class="praca-do-wrapper">
+                        <div class="praca-do-label">PRACA DO</div>
+                        <div class="t-footer" id="f-${groupId}-${type}">-- --.-- --:--</div>
+                    </div>
                     <div class="t-value" id="t-${groupId}-${type}">0D 00h 00m 00s</div>
                 </div>
             </div>`;
