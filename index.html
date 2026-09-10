@@ -98,6 +98,27 @@
 
         .btn-icon { font-size: 2.2rem; }
 
+        #btn-install {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: white;
+            background-color: #2d6a4f;
+            border: 2px solid #48bb78;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            gap: 8px;
+        }
+        #btn-install:hover {
+            background-color: #40916c;
+            transform: translateY(-3px);
+        }
+
         @media (max-width: 750px) {
             .menu-container { flex-direction: column; gap: 20px; }
             .menu-btn { width: 240px; height: 130px; }
@@ -110,6 +131,8 @@
 <body>
 
     <h1>Monitor czasu pracy <br>linii PET</h1>
+
+    <button id="btn-install" onclick="installApp()">📲 Zainstaluj aplikację</button>
 
     <div class="menu-container">
         <button class="menu-btn btn-view" onclick="goView()">
@@ -149,6 +172,29 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js');
         }
+
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('btn-install').style.display = 'inline-flex';
+        });
+
+        function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(result => {
+                if (result.outcome === 'accepted') {
+                    document.getElementById('btn-install').style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('btn-install').style.display = 'none';
+        });
     </script>
 </body>
 </html>
