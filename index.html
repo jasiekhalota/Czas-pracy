@@ -133,6 +133,7 @@
     <h1>Monitor czasu pracy <br>linii PET</h1>
 
     <button id="btn-install" onclick="installApp()">📲 Zainstaluj aplikację</button>
+    <div id="pwa-diag" style="margin-top:12px;font-size:0.8rem;color:#aaa;text-align:left;background:rgba(0,0,0,0.5);padding:10px 16px;border-radius:10px;line-height:1.8;max-width:340px;"></div>
 
     <div class="menu-container">
         <button class="menu-btn btn-view" onclick="goView()">
@@ -175,11 +176,46 @@
 
         let deferredPrompt;
 
+        // --- PWA diagnostyka ---
+        const diag = document.getElementById('pwa-diag');
+
+        // 1. Sprawdź SW
+        if (!('serviceWorker' in navigator)) {
+            diag.innerHTML += '❌ Service Worker: nieobsługiwany<br>';
+        } else {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => diag.innerHTML += '✅ Service Worker: zarejestrowany<br>')
+                .catch(err => diag.innerHTML += '❌ Service Worker: błąd — ' + err + '<br>');
+        }
+
+        // 2. Sprawdź manifest
+        fetch('./site.webmanifest')
+            .then(r => r.ok
+                ? diag.innerHTML += '✅ Manifest: dostępny<br>'
+                : diag.innerHTML += '❌ Manifest: błąd HTTP ' + r.status + '<br>')
+            .catch(() => diag.innerHTML += '❌ Manifest: niedostępny<br>');
+
+        // 3. Sprawdź HTTPS
+        if (location.protocol === 'https:') {
+            diag.innerHTML += '✅ HTTPS: tak<br>';
+        } else {
+            diag.innerHTML += '❌ HTTPS: brak (wymagane!)<br>';
+        }
+
+        // 4. Nasłuchuj na beforeinstallprompt
         window.addEventListener('beforeinstallprompt', e => {
             e.preventDefault();
             deferredPrompt = e;
+            diag.innerHTML += '✅ beforeinstallprompt: odpalił!<br>';
             document.getElementById('btn-install').style.display = 'inline-flex';
         });
+
+        // 5. Czy już zainstalowane?
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            diag.innerHTML += 'ℹ️ Aplikacja już działa jako PWA (zainstalowana)<br>';
+        } else {
+            diag.innerHTML += 'ℹ️ Tryb: przeglądarka (nie standalone)<br>';
+        }
 
         function installApp() {
             if (!deferredPrompt) return;
@@ -194,6 +230,7 @@
 
         window.addEventListener('appinstalled', () => {
             document.getElementById('btn-install').style.display = 'none';
+            diag.innerHTML += '✅ Zainstalowano!<br>';
         });
     </script>
 </body>
