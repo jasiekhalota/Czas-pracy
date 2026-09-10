@@ -273,6 +273,30 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
         .toggle-switch input:checked + .toggle-slider { background: #27ae60; }
         .toggle-switch input:checked + .toggle-slider::before { transform: translateX(30px); }
 
+
+        .stats-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 8px;
+            justify-content: center;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+        .stat-item .stat-val { font-weight: 700; color: #fff; }
+        .stat-dot { width: 7px; height: 7px; border-radius: 50%; background: #48bb78;
+                    box-shadow: 0 0 5px #48bb78; animation: pulse 2s infinite; display:inline-block; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .top-bar {
             display: flex;
             align-items: stretch;
@@ -303,6 +327,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 <body>
 
     <h1>System Monitorowania Cykli Produkcyjnych</h1>
+    <div class="stats-bar">
+        <div class="stat-item"><span class="stat-dot"></span> Online: <span class="stat-val" id="stat-online">—</span></div>
+        <div class="stat-item">👁 Dzisiaj: <span class="stat-val" id="stat-today">—</span></div>
+        <div class="stat-item">📅 Miesiąc: <span class="stat-val" id="stat-month">—</span></div>
+    </div>
     <div class="top-bar">
         <a href="index.html" class="home-btn">🏠 HOME</a>
         <button id="save-data-btn" onclick="saveDataToFirebase()">ZAPISZ I SYNCHRONIZUJ CZAS</button>
@@ -585,6 +614,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
         }
 
         generateAll();
+        initStats(db, 'edit');
         db.ref('monitorData').on('value', snap => {
             window.SHARED_DATA = snap.val() || {};
             Object.keys(window.SHARED_DATA).forEach(key => {
@@ -597,6 +627,41 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
             updateAll();
         });
         setInterval(updateAll, 1000);
+    </script>
+
+    <script>
+        // ---- FIREBASE STATS ----
+        const statsUid = Math.random().toString(36).slice(2);
+        const statsNow = new Date();
+        const statsTodayKey = statsNow.toISOString().slice(0,10).replace(/-/g,'');
+        const statsMonthKey = statsNow.toISOString().slice(0,7).replace(/-/g,'');
+
+        function initStats(db, pageName) {
+            const presRef = db.ref('presence/' + statsUid);
+            presRef.set({ page: pageName, ts: Date.now() });
+            presRef.onDisconnect().remove();
+            setInterval(() => presRef.set({ page: pageName, ts: Date.now() }), 20000);
+
+            db.ref('presence').on('value', snap => {
+                const val = snap.val() || {};
+                const cutoff = Date.now() - 60000;
+                const online = Object.values(val).filter(v => v.ts > cutoff).length;
+                const el = document.getElementById('stat-online');
+                if (el) el.textContent = online;
+            });
+
+            db.ref('visits/day/' + statsTodayKey).transaction(v => (v || 0) + 1);
+            db.ref('visits/month/' + statsMonthKey).transaction(v => (v || 0) + 1);
+
+            db.ref('visits/day/' + statsTodayKey).on('value', s => {
+                const el = document.getElementById('stat-today');
+                if (el) el.textContent = s.val() || 0;
+            });
+            db.ref('visits/month/' + statsMonthKey).on('value', s => {
+                const el = document.getElementById('stat-month');
+                if (el) el.textContent = s.val() || 0;
+            });
+        }
     </script>
 </body>
 </html>
